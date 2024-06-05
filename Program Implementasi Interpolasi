@@ -1,0 +1,75 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Data tegangan dan waktu patah
+tegangan = np.array([5, 10, 15, 20, 25, 30, 35, 40])
+waktu_patah = np.array([40, 30, 25, 40, 18, 20, 22, 15])
+
+# Fungsi interpolasi Lagrange
+def interpolate_lagrange(x, tegangan, waktu_patah):
+    n = len(tegangan)
+    y = np.zeros(len(x))
+    for i in range(n):
+        term = np.ones(len(x))
+        for j in range(n):
+            if i != j:
+                term *= (x - tegangan[j]) / (tegangan[i] - tegangan[j])
+        y += waktu_patah[i] * term
+    return y
+
+# Fungsi untuk menghitung tabel divided difference
+def divided_diff(tegangan, waktu_patah):
+    n = len(tegangan)
+    divided_diff_table = np.zeros((n, n))
+    divided_diff_table[:, 0] = waktu_patah
+    
+    for j in range(1, n):
+        for i in range(n - j):
+            divided_diff_table[i, j] = (divided_diff_table[i + 1, j - 1] - divided_diff_table[i, j - 1]) / (tegangan[i + j] - tegangan[i])
+    
+    return divided_diff_table
+
+# Fungsi interpolasi Newton menggunakan tabel divided difference
+def interpolate_newton(x, tegangan, divided_diff_table):
+    n = len(tegangan)
+    y = np.zeros_like(x, dtype=float)
+    
+    for k in range(len(x)):
+        temp = divided_diff_table[0, 0]
+        product_term = 1.0
+        for i in range(1, n):
+            product_term *= (x[k] - tegangan[i - 1])
+            temp += divided_diff_table[0, i] * product_term
+        y[k] = temp
+    
+    return y
+
+# Membuat tabel divided difference
+divided_diff_table = divided_diff(tegangan, waktu_patah)
+
+# Interpolasi dan visualisasi
+x = np.arange(min(tegangan), max(tegangan) + 0.1, 0.1)
+y_lagrange = interpolate_lagrange(x, tegangan, waktu_patah)
+y_newton = interpolate_newton(x, tegangan, divided_diff_table)
+
+# Plotting
+plt.figure(figsize=(10, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(tegangan, waktu_patah, 'o', label='Data')
+plt.plot(x, y_lagrange, label='Lagrange')
+plt.xlabel('Tegangan (kg/mm^2)')
+plt.ylabel('Waktu patah (jam)')
+plt.title('Hubungan antara Tegangan dan Waktu Patah (Lagrange)')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(tegangan, waktu_patah, 'o', label='Data')
+plt.plot(x, y_newton, label='Newton', color='green')
+plt.xlabel('Tegangan (kg/mm^2)')
+plt.ylabel('Waktu patah (jam)')
+plt.title('Hubungan antara Tegangan dan Waktu Patah (Newton)')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
